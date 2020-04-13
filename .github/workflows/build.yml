@@ -326,6 +326,7 @@ jobs:
       matrix:
         board:
         - "fomu"
+        - "orangecrab"
 
     steps:
     - name: Set up Python 3.8

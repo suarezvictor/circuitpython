@@ -33,6 +33,8 @@
 #include "csr.h"
 #include "generated/soc.h"
 
+#include "supervisor/internal_flash.h"
+
 float common_hal_mcu_processor_get_temperature(void) {
     return NAN;
 }
@@ -46,6 +48,7 @@ uint32_t common_hal_mcu_processor_get_frequency(void) {
 }
 
 void common_hal_mcu_processor_get_uid(uint8_t raw_id[]) {
+#ifdef FOMU
     raw_id[0] = csr_readl(CSR_VERSION_MAJOR_ADDR);
     raw_id[1] = csr_readl(CSR_VERSION_MINOR_ADDR);
     raw_id[2] = csr_readl(CSR_VERSION_REVISION_ADDR);
@@ -61,4 +64,8 @@ void common_hal_mcu_processor_get_uid(uint8_t raw_id[]) {
     raw_id[12] = csr_readl(CSR_VERSION_SEED_ADDR + 4);
     raw_id[13] = csr_readl(CSR_VERSION_SEED_ADDR + 8);
     raw_id[14] = csr_readl(CSR_VERSION_SEED_ADDR + 12);
+#else
+    spi_read_unique_id(raw_id);
+#endif
 }
+
