@@ -68,4 +68,3 @@ void common_hal_mcu_processor_get_uid(uint8_t raw_id[]) {
     spi_read_unique_id(raw_id);
 #endif
 }
-
