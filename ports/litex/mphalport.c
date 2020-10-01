@@ -32,7 +32,7 @@
 #include "py/mpstate.h"
 #include "py/gc.h"
 
-#include "csr.h"
+#include "generated/csr.h"
 #include "generated/soc.h"
 
 #include "irq.h"

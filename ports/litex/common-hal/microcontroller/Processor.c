@@ -30,7 +30,7 @@
 #include "py/runtime.h"
 #include "supervisor/shared/translate.h"
 
-#include "csr.h"
+#include "generated/csr.h"
 #include "generated/soc.h"
 
 #include "supervisor/internal_flash.h"

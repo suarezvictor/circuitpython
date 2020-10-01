@@ -30,7 +30,7 @@
 #include "supervisor/shared/tick.h"
 #include "boards/board.h"
 #include "irq.h"
-#include "csr.h"
+#include "generated/csr.h"
 
 // Global millisecond tick count. 1024 per second because most RTCs are clocked with 32.768khz
 // crystals.
