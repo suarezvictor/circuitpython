@@ -24,6 +24,13 @@
  * THE SOFTWARE.
  */
 
+#include <generated/soc.h>
+#include <tusb.h>
+//#include <lib/tinyusb/src/host/ohci/ohci.h>
+#include <portable/ohci/ohci.h>
+#include <uart.c> //FIXME: move to makefile
+/////////////////////////////
+
 #include <stdint.h>
 #include <string.h>
 
@@ -411,6 +418,66 @@ int run_repl(void) {
     return exit_code;
 }
 
+void uart_send(uint8_t ch)
+{
+      //uart_rxtx_write(ch);
+      //while (uart_txfull_read());
+      //uart_write(ch);
+}
+void dump_hex(uint8_t *p, size_t len)
+{
+      uart_send(':');
+      for(size_t r = 0; r < len; ++r)
+      {
+        uart_send("0123456789ABCDEF"[p[r]/16]);
+        uart_send("0123456789ABCDEF"[p[r]%16]);
+        while (uart_txfull_read());
+        if((r & 0x7) == 0x7)
+        {
+          uart_send(' ');
+        }
+      }
+      uart_send('\n');
+}
+
+uint8_t usb_buf[256] TU_ATTR_ALIGNED(4);
+
+tusb_desc_device_t desc_device;
+
+bool print_device_descriptor(uint8_t daddr, tusb_control_request_t const * request, xfer_result_t result)
+{
+  (void) request;
+
+  if ( XFER_RESULT_SUCCESS != result )
+  {
+    printf("Failed to get device descriptor\r\n");
+    return false;
+  }
+
+  printf("Rhport %u Device %u: ID %04x:%04x\r\n", 0, daddr, desc_device.idVendor, desc_device.idProduct);
+  printf("Device Descriptor:\r\n");
+  printf("  bLength             %u\r\n", desc_device.bLength);
+  printf("  bDescriptorType     %u\r\n", desc_device.bDescriptorType);
+  printf("  bcdUSB              %04x\r\n", desc_device.bcdUSB);
+
+  printf("  bDeviceClass        %u\r\n", desc_device.bDeviceClass);
+  printf("  bDeviceSubClass     %u\r\n", desc_device.bDeviceSubClass);
+  printf("  bDeviceProtocol     %u\r\n", desc_device.bDeviceProtocol);
+  printf("  bMaxPacketSize0     %u\r\n", desc_device.bMaxPacketSize0);
+
+  printf("  idVendor            0x%04x\r\n", desc_device.idVendor);
+  printf("  idProduct           0x%04x\r\n", desc_device.idProduct);
+  printf("  bcdDevice           %04x\r\n", desc_device.bcdDevice);
+
+  printf("  iManufacturer       %u\r\n", desc_device.iManufacturer);
+  printf("  iProduct            %u\r\n", desc_device.iProduct);
+  printf("  iSerialNumber       %u\r\n", desc_device.iSerialNumber);
+
+  printf("  bNumConfigurations  %u\r\n", desc_device.bNumConfigurations);
+
+  return true;
+}
+
 int __attribute__((used)) main(void) {
     memory_init();
 
@@ -428,6 +495,53 @@ int __attribute__((used)) main(void) {
 
     stack_init();
 
+#if 1    
+    //(void) safe_mode;
+    
+    board_init();
+    uart_init(); //FIXME: needed?
+      //static uint32_t xxx = 0x01020304;
+    //uart_write('0'+*(uint8_t*)&xxx); //4: little endian
+    //new_status_color(0x00FF00);
+
+#define toupper(c) (islower(c) ? (ch) - 'a' + 'A' : (ch))        
+#define islower(c) ((c) >= 'a' && (c) <= 'z')    
+    tusb_init();
+
+    volatile ohci_registers_t *OHCI_REG = (volatile ohci_registers_t *) USB_OHCI_BASE;
+    dump_hex((uint8_t *) OHCI_REG, sizeof(ohci_registers_t));
+    dump_hex((uint8_t *) OHCI_REG, sizeof(ohci_registers_t));
+    ohci_registers_t init_regs = *OHCI_REG;
+    for(;;)
+    {
+      const int intf = 0; //use 1st interface
+      if (tud_cdc_n_available(intf) )
+      {
+
+        uint8_t buf[64];
+        uint32_t count = tud_cdc_n_read(intf, buf, sizeof(buf));
+        for(uint32_t x=0; x < count; ++x)
+        {
+          uint8_t ch = buf[x];
+          tud_cdc_n_write_char(intf, toupper(ch)); //echoes back to cdc, uppercase
+          uart_write(ch); //sends to uart unchanged
+          tud_hid_mouse_report(2, 0x00, 15, -15, 0, 0); //move (15,-15), 2=REPORT_ID_MOUSE
+        }
+        tud_cdc_n_write_flush(intf);
+      }
+      
+      tud_task(); //TinyUSB works with interrupts just for queuing packets
+      tuh_task();
+      
+      if(memcmp((void *) &init_regs.interrupt_status, (void *) &OHCI_REG->interrupt_status, sizeof(OHCI_REG->interrupt_status)) != 0)
+      {
+        dump_hex((uint8_t *) OHCI_REG, sizeof(ohci_registers_t));
+        memcpy((void *) &init_regs, (void *) OHCI_REG, sizeof(*OHCI_REG)); 
+      }
+      (void) init_regs;
+   }
+    
+#else
     // Create a new filesystem only if we're not in a safe mode.
     // A power brownout here could make it appear as if there's
     // no SPI flash filesystem, and we might erase the existing one.
@@ -479,6 +593,7 @@ int __attribute__((used)) main(void) {
         }
     }
     mp_deinit();
+#endif    
     return 0;
 }
 
@@ -522,3 +637,78 @@ void MP_WEAK __assert_func(const char *file, int line, const char *func, const c
     __fatal_error("Assertion failed");
 }
 #endif
+
+////////////////////////////////
+
+void tuh_mount_cb(uint8_t dev_addr)
+{
+  // application set-up
+  //printf("A device with address %d is mounted\r\n", dev_addr);
+  uart_write('+');
+}
+
+void tuh_umount_cb(uint8_t dev_addr)
+{
+  // application tear-down
+  //printf("A device with address %d is unmounted \r\n", dev_addr);
+  uart_write('-');
+}
+
+void tuh_hid_mount_cb(uint8_t dev_addr, uint8_t instance, uint8_t const* desc_report, uint16_t desc_len)
+{
+  (void)desc_report;
+  (void)desc_len;
+  uint16_t vid, pid;
+  tuh_vid_pid_get(dev_addr, &vid, &pid);
+  uart_write('H');
+  uart_write('M');
+  //printf("HID device address = %d, instance = %d is mounted\r\n", dev_addr, instance);
+  //printf("VID = %04x, PID = %04x\r\n", vid, pid);
+}
+
+// Invoked when device with hid interface is un-mounted
+void tuh_hid_umount_cb(uint8_t dev_addr, uint8_t instance)
+{
+  //printf("HID device address = %d, instance = %d is unmounted\r\n", dev_addr, instance);
+  uart_write('H');
+  uart_write('U');
+}
+
+
+// Invoked when received report from device via interrupt endpoint
+void tuh_hid_report_received_cb(uint8_t dev_addr, uint8_t instance, uint8_t const* report, uint16_t len)
+{
+  uart_write('H');
+  uart_write('R');
+
+  // continue to request to receive report
+  if ( !tuh_hid_receive_report(dev_addr, instance) )
+  {
+    //printf("Error: cannot request to receive report\r\n");
+  }
+}
+
+//--------------------------------------------------------------------+
+// USB CDC
+//--------------------------------------------------------------------+
+#if CFG_TUH_CDC
+CFG_TUSB_MEM_SECTION static char serial_in_buffer[64] = { 0 };
+
+// invoked ISR context
+void tuh_cdc_xfer_isr(uint8_t dev_addr, xfer_result_t event, cdc_pipeid_t pipe_id, uint32_t xferred_bytes)
+{
+  (void) event;
+  (void) pipe_id;
+  (void) xferred_bytes;
+
+  //printf(serial_in_buffer);
+  tu_memclr(serial_in_buffer, sizeof(serial_in_buffer));
+
+  tuh_cdc_receive(dev_addr, serial_in_buffer, sizeof(serial_in_buffer), true); // waiting for next data
+  
+  uart_write('C');
+  uart_write('x');
+}
+
+#endif
+

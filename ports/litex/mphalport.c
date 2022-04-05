@@ -27,7 +27,11 @@
 
 #include <string.h>
 
-#include "lib/tinyusb/src/device/usbd.h"
+#include "uart.h"
+//#include "lib/tinyusb/src/device/usbd.h"
+//#include "lib/tinyusb/src/host/usbh.h"
+#include "tusb.h"
+
 #include "py/mphal.h"
 #include "py/mpstate.h"
 #include "py/gc.h"
@@ -49,8 +53,18 @@ void isr(void) {
 
 #ifdef CFG_TUSB_MCU
     if (irqs & (1 << USB_INTERRUPT))
+    {
         tud_int_handler(0);
+        //uart_write('i');
+    }
 #endif
+
+#ifdef USB_OHCI_CTRL_INTERRUPT //CFG_TUSB_RHPORT0_MODE & OPT_MODE_HOST
+  if (irqs & (1 << USB_OHCI_CTRL_INTERRUPT))
+    tuh_int_handler(0); //FIXME: tuh_isr is defined as hcd_isr (tuh_int_handler in newer versions of TinyUSB)
+#endif
+
+
     if (irqs & (1 << TIMER0_INTERRUPT))
         SysTick_Handler();
 }
@@ -60,3 +74,18 @@ mp_uint_t cpu_get_regs_and_sp(mp_uint_t *regs) {
     asm volatile ("mv %0, x2" :"=r"(__tmp));
     return __tmp;
 }
+
+
+void hcd_int_enable(uint8_t rhport)
+{
+    assert(rhport == 0);
+    irq_setmask(irq_getmask() | (1 << USB_OHCI_CTRL_INTERRUPT));
+}
+
+void hcd_int_disable(uint8_t rhport)
+{
+    assert(rhport == 0);
+    irq_setmask(irq_getmask() & ~(1 << USB_OHCI_CTRL_INTERRUPT));
+}
+
+

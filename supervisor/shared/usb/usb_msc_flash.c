@@ -86,15 +86,18 @@ int32_t tud_msc_scsi_cb (uint8_t lun, const uint8_t scsi_cmd[16], void* buffer, 
     int32_t resplen = 0;
 
     switch ( scsi_cmd[0] ) {
+#ifdef SCSI_CMD_PREVENT_ALLOW_MEDIUM_REMOVAL
         case SCSI_CMD_PREVENT_ALLOW_MEDIUM_REMOVAL:
             // Host is about to read/write etc ... better not to disconnect disk
             resplen = 0;
         break;
+#endif
 
         default:
+#ifdef SCSI_SENSE_ILLEGAL_REQUEST        
           // Set Sense = Invalid Command Operation
           tud_msc_set_sense(lun, SCSI_SENSE_ILLEGAL_REQUEST, 0x20, 0x00);
-
+#endif
           // negative means error -> tinyusb could stall and/or response with failed status
           resplen = -1;
         break;
@@ -208,8 +211,10 @@ bool tud_msc_test_unit_ready_cb(uint8_t lun) {
         return false;
     }
     if (ejected[lun]) {
+#ifdef SCSI_SENSE_NOT_READY    
         // Set 0x3a for media not present.
         tud_msc_set_sense(lun, SCSI_SENSE_NOT_READY, 0x3A, 0x00);
+#endif        
         return false;
     }
 

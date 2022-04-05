@@ -78,17 +78,25 @@ static inline uint32_t spi_readl(uint32_t addr)
 
 __attribute__((section(".ramtext")))
 static inline void bb_spi_write(unsigned char value) {
+#ifdef CSR_LXSPI_BITBANG_ADDR
     spi_writel(value, CSR_LXSPI_BITBANG_ADDR);
+#endif
 }
 
 __attribute__((section(".ramtext")))
 static inline uint32_t bb_read(void) {
+#ifdef CSR_LXSPI_MISO_ADDR
     return spi_readl(CSR_LXSPI_MISO_ADDR);
+#else
+    return 0xFF;    
+#endif
 }
 
 __attribute__((section(".ramtext")))
 static inline void bb_spi_en(unsigned int en) {
+#ifdef CSR_LXSPI_BITBANG_EN_ADDR
     spi_writel(en, CSR_LXSPI_BITBANG_EN_ADDR);
+#endif
 }
 
 __attribute__((section(".ramtext")))

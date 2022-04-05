@@ -24,7 +24,7 @@
  * THE SOFTWARE.
  */
 
-#include "lib/tinyusb/src/tusb.h"
+#include "tusb.h"
 #include "shared-module/usb_hid/Device.h"
 
 #include "genhdr/autogen_usb_descriptor.h"
@@ -46,7 +46,7 @@ uint8_t const * tud_descriptor_configuration_cb(uint8_t index) {
 // Invoked when received GET HID REPORT DESCRIPTOR
 // Application return pointer to descriptor
 // Descriptor contents must exist long enough for transfer to complete
-uint8_t const * tud_hid_descriptor_report_cb(void) {
+uint8_t const * tud_hid_descriptor_report_cb(uint8_t instance) {
   return hid_report_descriptor;
 }
 

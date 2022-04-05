@@ -68,9 +68,11 @@ INC += -I./boards
 INC += -I./boards/$(BOARD)
 INC += -I./peripherals
 INC += -I../../lib/mp-readline
-INC += -I../../lib/tinyusb/src
+INC += -I$(TINYUSB_ROOT)/src
 INC += -I../../supervisor/shared/usb
-
+INC += -I/media/vsuarez/elocaldata/SCRATCH/orangecrab-examples/litex/build/digilent_arty/software/include/
+INC += -I/media/vsuarez/elocaldata/SCRATCH/litex/litex/soc/cores/cpu/vexriscv_smp/
+INC += -I/media/vsuarez/elocaldata/SCRATCH/litex/litex/soc/software/libbase/
 
 #Debugging/Optimization
 ifeq ($(DEBUG), 1)

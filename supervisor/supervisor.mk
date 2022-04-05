@@ -13,6 +13,8 @@ SRC_SUPERVISOR = \
 	supervisor/shared/tick.c \
 	supervisor/shared/translate.c
 
+TINYUSB_ROOT?=/media/vsuarez/elocaldata/SCRATCH/tinyusb
+
 ifndef $(NO_USB)
 	NO_USB = $(wildcard supervisor/usb.c)
 endif
@@ -67,12 +69,18 @@ ifeq ($(USB),FALSE)
 	endif
 else
 	SRC_SUPERVISOR += \
-		lib/tinyusb/src/common/tusb_fifo.c \
-		lib/tinyusb/src/device/usbd.c \
-		lib/tinyusb/src/device/usbd_control.c \
-		lib/tinyusb/src/class/msc/msc_device.c \
-		lib/tinyusb/src/class/cdc/cdc_device.c \
-		lib/tinyusb/src/tusb.c \
+		$(TINYUSB_ROOT)/src/common/tusb_fifo.c \
+		$(TINYUSB_ROOT)/src/device/usbd.c \
+		$(TINYUSB_ROOT)/src/portable/ohci/ohci.c \
+		$(TINYUSB_ROOT)/src/host/usbh.c \
+		$(TINYUSB_ROOT)/src/host/hub.c \
+		$(TINYUSB_ROOT)/src/class/cdc/cdc_host.c \
+		$(TINYUSB_ROOT)/src/device/usbd_control.c \
+		$(TINYUSB_ROOT)/src/class/msc/msc_device.c \
+		$(TINYUSB_ROOT)/src/class/msc/msc_host.c \
+		$(TINYUSB_ROOT)/src/class/cdc/cdc_device.c \
+		$(TINYUSB_ROOT)/src/class/hid/hid_host.c \
+		$(TINYUSB_ROOT)/src/tusb.c \
 		supervisor/shared/serial.c \
 		supervisor/usb.c \
 		supervisor/shared/usb/usb_desc.c \
@@ -82,7 +90,7 @@ else
 
 	ifeq ($(CIRCUITPY_USB_HID), 1)
 		SRC_SUPERVISOR += \
-			lib/tinyusb/src/class/hid/hid_device.c \
+			$(TINYUSB_ROOT)/src/class/hid/hid_device.c \
 			shared-bindings/usb_hid/__init__.c \
 			shared-bindings/usb_hid/Device.c \
 			shared-module/usb_hid/__init__.c \
@@ -91,7 +99,7 @@ else
 
 	ifeq ($(CIRCUITPY_USB_MIDI), 1)
 		SRC_SUPERVISOR += \
-			lib/tinyusb/src/class/midi/midi_device.c \
+			$(TINYUSB_ROOT)/src/class/midi/midi_device.c \
 			shared-bindings/usb_midi/__init__.c \
 			shared-bindings/usb_midi/PortIn.c \
 			shared-bindings/usb_midi/PortOut.c \

@@ -39,6 +39,7 @@
 #define _TUSB_CONFIG_H_
 
 #include "genhdr/autogen_usb_descriptor.h"
+#include <generated/csr.h>
 
 #ifdef __cplusplus
  extern "C" {
@@ -47,7 +48,7 @@
 //--------------------------------------------------------------------+
 // COMMON CONFIGURATION
 //--------------------------------------------------------------------+
-#define CFG_TUSB_RHPORT0_MODE       OPT_MODE_DEVICE
+#define CFG_TUSB_RHPORT0_MODE       (OPT_MODE_DEVICE | OPT_MODE_HOST)
 
 #ifndef CFG_TUSB_DEBUG
 #define CFG_TUSB_DEBUG              0
@@ -113,6 +114,38 @@
 #define CFG_TUSB_ATTR_USBRAM
 #define CFG_TUSB_MEM_ALIGN          __attribute__ ((aligned(4)))
 
+
+//--------------------------------------------------------------------
+// HOST CONFIGURATION
+//--------------------------------------------------------------------
+#define CFG_TUSB_HOST_DEVICE_MAX    4
+
+// Size of buffer to hold descriptors and other data used for enumeration
+#define CFG_TUH_ENUMERATION_BUFSIZE 256
+
+#define CFG_TUH_HUB                 1 //it seems must be set
+#define CFG_TUH_CDC                 1
+#define CFG_TUH_MSC                 1
+#define CFG_TUH_VENDOR              0
+
+// max device support (excluding hub device)
+#define CFG_TUH_DEVICE_MAX          (CFG_TUH_HUB ? 4 : 1) // hub typically has 4 ports
+
+
+//------------- HID -------------//
+#define CFG_TUH_HID                  4 // typical keyboard + mouse device can have 3-4 HID interfaces
+#define CFG_TUH_HID_EPIN_BUFSIZE    64
+#define CFG_TUH_HID_EPOUT_BUFSIZE   64
+
+#define CFG_TUH_HID_KEYBOARD 1
+#define CFG_TUH_HID_MOUSE 1
+#define CFG_TUSB_HOST_HID_GENERIC 1
+
+#define LPC_USB_BASE USB_OHCI_BASE //from soc.h, same as usb_ohci_base_read()
+#define TUP_USBIP_OHCI //needed for ohci.c
+ 
+
+typedef void *pipe_handle_t;
 
 #ifdef __cplusplus
  }
